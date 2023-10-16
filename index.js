@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const port = process.env.PORT || 5000;
 
@@ -31,15 +31,56 @@ async function run() {
 
     const coffeesCollection = client.db("coffeesDB").collection("coffees");
 
+    //find all
     app.get("/coffees", async (req, res) => {
       const cursor = coffeesCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     });
 
+    //single item create
     app.post("/coffee", async (req, res) => {
       const newCoffee = req.body;
       const result = await coffeesCollection.insertOne(newCoffee);
+      res.send(result);
+    });
+
+    //find single item by id
+    app.get("/coffee/:id", async (req, res) => {
+      const coffeeId = req.params.id;
+      const params = { _id: new ObjectId(coffeeId) };
+      const result = await coffeesCollection.findOne(params);
+      res.send(result);
+    });
+
+    //delete single item by id
+    app.delete("/coffee/:id", async (req, res) => {
+      const deleteId = req.params.id;
+      const query = { _id: new ObjectId(deleteId) };
+      const result = await coffeesCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    //update single item
+    app.put("/coffee/:id", async (req, res) => {
+      const updateId = req.params.id;
+      const filter = { _id: new ObjectId(updateId) };
+      const options = { upsert: true };
+      const updatedCoffee = req.body;
+
+      const coffee = {
+        $set: {
+          name: updatedCoffee.name,
+          chef: updatedCoffee.chef,
+          supplier: updatedCoffee.supplier,
+          taste: updatedCoffee.taste,
+          category: updatedCoffee.category,
+          details: updatedCoffee.details,
+          photo: updatedCoffee.photo,
+          price: updatedCoffee.price,
+        },
+      };
+      const result = await coffeesCollection.updateOne(filter, coffee, options);
       res.send(result);
     });
 
